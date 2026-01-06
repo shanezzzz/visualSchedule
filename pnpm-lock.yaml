@@ -30,8 +30,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
       schedule-calendar:
-        specifier: ^1.5.0
-        version: 1.5.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: ^1.5.1
+        version: 1.5.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -2111,8 +2111,8 @@ packages:
     resolution: {integrity: sha512-x/+Cz4YrimQxQccJf5mKEbIa1NzeCRNI5Ecl/ekmlYaampdNLPalVyIcCZNNH3MvmqBugV5TMYZXv0ljslUlaw==}
     engines: {node: '>= 0.4'}
 
-  schedule-calendar@1.5.0:
-    resolution: {integrity: sha512-GAk3nD54xcY88qiWIcwkxF1reTsZSenHK9BKe/Tv+zzJrSex6QTUY6mglDavEVkrUP4C8MzzeZm2G1I4Bt+ZjQ==}
+  schedule-calendar@1.5.1:
+    resolution: {integrity: sha512-p/k2QCLYJy3XNh81CRdJTzyQy6Zg/+eaZkqdgKSqbyghB8gyDnuvuV/aotzBepgXn5qsBWCC3Q8FdOXpxJRr7A==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -4675,7 +4675,7 @@ snapshots:
       es-errors: 1.3.0
       is-regex: 1.2.1
 
-  schedule-calendar@1.5.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  schedule-calendar@1.5.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       dayjs: 1.11.19
       react: 19.2.3
