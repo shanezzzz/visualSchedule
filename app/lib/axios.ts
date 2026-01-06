@@ -57,7 +57,7 @@ function handleUnauthorized(status?: number) {
 }
 
 async function request<T>(
-  method: "get" | "post" | "put" | "delete",
+  method: "get" | "post" | "put" | "delete" | "patch",
   url: string,
   data?: unknown
 ): Promise<ApiResponse<T>> {
@@ -80,6 +80,7 @@ const api = {
   post: <T>(url: string, data?: unknown) => request<T>("post", url, data),
   put: <T>(url: string, data?: unknown) => request<T>("put", url, data),
   delete: <T>(url: string) => request<T>("delete", url),
+  patch: <T>(url: string, data?: unknown) => request<T>("patch", url, data),
 };
 
 export default api;
