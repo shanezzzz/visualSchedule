@@ -14,32 +14,15 @@ type EventPayload = {
   employeeId?: string;
 };
 
-function getCorsHeaders(origin: string | null) {
-  const allowedOrigins = (process.env.NEXT_PUBLIC_ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  let allowOrigin: string | null = null;
-
-  if (origin) {
-    if (allowedOrigins.length > 0) {
-      allowOrigin = allowedOrigins.includes(origin) ? origin : null;
-    } else {
-      allowOrigin = origin;
-    }
-  }
+function getCorsHeaders() {
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Origin": "*",
+    Vary: "Origin",
   };
-
-  if (allowOrigin) {
-    headers["Access-Control-Allow-Origin"] = allowOrigin;
-    headers["Vary"] = "Origin";
-  }
 
   return headers;
 }
@@ -58,13 +41,13 @@ function getDateRange(date: string) {
   };
 }
 
-export async function OPTIONS(request: Request) {
-  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+export async function OPTIONS() {
+  const corsHeaders = getCorsHeaders();
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
 export async function GET(request: Request) {
-  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+  const corsHeaders = getCorsHeaders();
   const { searchParams } = new URL(request.url);
   const employeeId = searchParams.get("employeeId");
   const startParam = searchParams.get("start");
@@ -125,7 +108,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+  const corsHeaders = getCorsHeaders();
   let payload: EventPayload;
 
   try {
