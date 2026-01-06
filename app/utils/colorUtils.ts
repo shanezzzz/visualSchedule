@@ -26,6 +26,45 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 }
 
 /**
+ * 解析 RGB/RGBA 格式的颜色字符串
+ * @param rgbString RGB 格式字符串，如 "rgb(28, 28, 29)" 或 "rgba(28, 28, 29, 0.5)"
+ * @returns RGB 对象 { r, g, b } 或 null（如果格式无效）
+ */
+export function parseRgbString(rgbString: string): { r: number; g: number; b: number } | null {
+  // 匹配 rgb(r, g, b) 或 rgba(r, g, b, a) 格式
+  const rgbMatch = rgbString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+  
+  if (rgbMatch) {
+    return {
+      r: parseInt(rgbMatch[1], 10),
+      g: parseInt(rgbMatch[2], 10),
+      b: parseInt(rgbMatch[3], 10),
+    };
+  }
+  
+  return null;
+}
+
+/**
+ * 将颜色字符串转换为 RGB 值（支持十六进制和 RGB 格式）
+ * @param color 颜色字符串，支持 "#1677ff"、"rgb(28, 28, 29)" 等格式
+ * @returns RGB 对象 { r, g, b } 或 null（如果格式无效）
+ */
+export function parseColor(color: string): { r: number; g: number; b: number } | null {
+  // 尝试解析为 RGB 格式
+  if (color.startsWith("rgb")) {
+    return parseRgbString(color);
+  }
+  
+  // 尝试解析为十六进制格式
+  if (color.startsWith("#") || /^[0-9A-Fa-f]{3,6}$/.test(color)) {
+    return hexToRgb(color);
+  }
+  
+  return null;
+}
+
+/**
  * 计算颜色的相对亮度（根据 WCAG 标准）
  * @param r 红色值 (0-255)
  * @param g 绿色值 (0-255)
@@ -47,7 +86,7 @@ export function calculateLuminance(r: number, g: number, b: number): number {
 
 /**
  * 根据背景颜色决定文字应该使用黑色还是白色
- * @param backgroundColor 背景颜色（十六进制格式，如 "#1677ff"）
+ * @param backgroundColor 背景颜色（支持十六进制、RGB 格式，如 "#1677ff"、"rgb(28, 28, 29)"）
  * @param threshold 亮度阈值，默认 0.5
  * @returns "#000000" (黑色) 或 "#ffffff" (白色)
  */
@@ -55,11 +94,11 @@ export function getContrastTextColor(
   backgroundColor: string,
   threshold: number = 0.5
 ): string {
-  const rgb = hexToRgb(backgroundColor);
+  const rgb = parseColor(backgroundColor);
 
   if (!rgb) {
-    // 如果颜色格式无效，默认返回黑色
-    return "#000000";
+    // 如果颜色格式无效，默认返回白色（更安全的选择）
+    return "#ffffff";
   }
 
   const luminance = calculateLuminance(rgb.r, rgb.g, rgb.b);
