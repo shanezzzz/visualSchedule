@@ -12,10 +12,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Layout hasSider>
-        <Sidebar />
-        <Content style={{ padding: 24 }}>{children}</Content>
+    <Layout hasSider>
+      <Sidebar />
+      <Layout className="h-screen">
+        <Content className="h-full overflow-auto p-6">
+          {children}
+        </Content>
       </Layout>
     </Layout>
   );

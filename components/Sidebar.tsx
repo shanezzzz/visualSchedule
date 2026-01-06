@@ -23,9 +23,8 @@ export default function Sidebar() {
   return (
     <Sider
       breakpoint="lg"
-      collapsedWidth="0"
       theme="light"
-      width={240}
+      width={220}
       style={{ borderRight: "1px solid #f0f0f0" }}
     >
       <div style={{ padding: "20px 16px 12px" }}>
