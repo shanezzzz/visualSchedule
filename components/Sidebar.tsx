@@ -25,7 +25,7 @@ export default function Sidebar() {
       breakpoint="lg"
       theme="light"
       width={220}
-      style={{ borderRight: "1px solid #f0f0f0" }}
+      collapsedWidth={0}
     >
       <div style={{ padding: "20px 16px 12px" }}>
         <Typography.Title level={5} style={{ margin: 0 }}>

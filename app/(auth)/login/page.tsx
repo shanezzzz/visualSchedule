@@ -13,11 +13,6 @@ interface AuthResponse {
     id: string;
     email?: string;
   } | null;
-  session: {
-    access_token: string;
-    refresh_token: string;
-  } | null;
-  error?: string;
 }
 
 export default function LoginPage() {
@@ -39,9 +34,6 @@ export default function LoginPage() {
       message.success(activeTab === "login" ? "登录成功！" : "注册成功！请检查邮箱确认。");
       
       if (activeTab === "login") {
-        if (response.data?.session?.access_token) {
-          localStorage.setItem("token", response.data.session.access_token);
-        }
         router.push("/schedule");
       } else {
         setActiveTab("login");

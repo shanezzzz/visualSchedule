@@ -16,17 +16,7 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: false,
-});
-
-client.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
+  withCredentials: true,
 });
 
 function parseError(error: unknown): ApiError {
@@ -60,7 +50,6 @@ function parseError(error: unknown): ApiError {
 
 function handleUnauthorized(status?: number) {
   if (status === 401 && typeof window !== "undefined") {
-    localStorage.removeItem("token");
     if (window.location.pathname !== "/login") {
       window.location.href = "/login";
     }
