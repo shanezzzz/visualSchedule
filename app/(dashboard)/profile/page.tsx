@@ -82,7 +82,7 @@ export default function ProfilePage() {
             bordered 
             column={{ xxl: 1, xl: 1, lg: 1, md: 1, sm: 1, xs: 1 }}
           >
-            <Descriptions.Item label={<Space><MailOutlined /> 邮箱地址</Space>}>
+            <Descriptions.Item label="邮箱地址">
               {user?.email || "未绑定"}
             </Descriptions.Item>
             <Descriptions.Item label="注册时间">
