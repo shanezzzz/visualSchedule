@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ant-design/icons": "6.x",
     "@ant-design/nextjs-registry": "^1.0.2",
     "antd": "^5.15.2",
     "dayjs": "^1.11.19",
