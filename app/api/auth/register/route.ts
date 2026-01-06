@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   let supabase;
   try {
-    supabase = createSupabaseServerClient();
+    supabase = await createSupabaseServerClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Supabase init failed." },
@@ -51,4 +51,3 @@ export async function POST(request: Request) {
     session: data.session,
   });
 }
-

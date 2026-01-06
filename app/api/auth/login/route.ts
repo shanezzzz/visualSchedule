@@ -10,35 +10,25 @@ type LoginPayload = {
 const ALLOWED_METHODS = "POST, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization";
 
-function getCorsHeaders(origin: string | null) {
-  const allowedOrigins = (process.env.NEXT_PUBLIC_ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  let allowOrigin = "*";
-
-  if (allowedOrigins.length > 0) {
-    allowOrigin = origin && allowedOrigins.includes(origin) ? origin : "null";
-  } else if (origin) {
-    allowOrigin = origin;
-  }
-
-  return {
-    "Access-Control-Allow-Origin": allowOrigin,
+function getCorsHeaders() {
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": ALLOWED_METHODS,
     "Access-Control-Allow-Headers": ALLOWED_HEADERS,
-    Vary: "Origin",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Origin": "*",
+    "Vary": "Origin",
   };
+
+  return headers;
 }
 
-export async function OPTIONS(request: Request) {
-  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+export async function OPTIONS() {
+  const corsHeaders = getCorsHeaders();
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(request: Request) {
-  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+  const corsHeaders = getCorsHeaders();
   let payload: LoginPayload;
 
   try {
@@ -61,7 +51,7 @@ export async function POST(request: Request) {
 
   let supabase;
   try {
-    supabase = createSupabaseServerClient();
+    supabase = await createSupabaseServerClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Supabase init failed." },
@@ -84,7 +74,6 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       user: data.user,
-      session: data.session,
     },
     { headers: corsHeaders }
   );
