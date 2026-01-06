@@ -12,6 +12,7 @@
     "@ant-design/icons": "6.x",
     "@ant-design/nextjs-registry": "^1.0.2",
     "antd": "^5.15.2",
+    "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "next": "16.1.1",
     "react": "19.2.3",
