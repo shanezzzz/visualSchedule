@@ -22,24 +22,16 @@ export default function ProfilePage() {
 
   const getUser = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await api.get<UserResponse>("/auth/user");
       
       if (response.error) {
-        // Axios interceptor will handle 401, for other errors we just log
         console.error("API error:", response.error.message);
         return;
       }
 
       if (response.data?.user) {
-        const userData = response.data.user;
-        setUser(userData);
-        // 只存需要展示的基础信息到 localStorage
-        const displayInfo = {
-          email: userData.email,
-          created_at: userData.created_at,
-          last_sign_in_at: userData.last_sign_in_at,
-        };
-        localStorage.setItem("user_info", JSON.stringify(displayInfo));
+        setUser(response.data.user);
       }
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -49,26 +41,12 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    // 1. Try to load from localStorage first for faster UX
-    const localUser = localStorage.getItem("user_info");
-    if (localUser) {
-      try {
-        const parsedUser = JSON.parse(localUser);
-        setUser(parsedUser);
-        setLoading(false); // We have something to show, stop showing the full page loader
-      } catch (e) {
-        console.error("Error parsing local user info:", e);
-      }
-    }
-
-    // 2. Fetch fresh data from API
     getUser();
   }, [getUser]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      localStorage.removeItem("user_info");
       message.success("已成功退出登录");
       router.push("/login");
     } catch (error) {
@@ -77,7 +55,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading && !user) {
+  if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
         <Spin size="large" tip="加载用户信息中..." />
