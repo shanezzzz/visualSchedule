@@ -242,7 +242,6 @@ export default function SchedulePage() {
 
     const updatedEvent: CalendarEventData = {
       ...event,
-      employeeId: next.employeeId,
       start: newStart.toISOString(),
       end: newEnd.toISOString(),
     };
@@ -253,6 +252,7 @@ export default function SchedulePage() {
         item.id === event.id
           ? {
               ...item,
+              employeeId: next.employeeId,
               start: newStart.format("HH:mm"),
               end: newEnd.format("HH:mm"),
             }
