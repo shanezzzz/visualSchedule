@@ -46,6 +46,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  const userEmail = data.user?.email ?? email;
+  const defaultName = userEmail.split("@")[0] || "user";
+
+  const { error: employeeError } = await supabase
+    .from("employees")
+    .insert({
+      name: defaultName,
+    });
+
+  if (employeeError) {
+    console.warn("Failed to create default employee:", employeeError.message);
+  }
+
   return NextResponse.json({
     user: data.user,
     session: data.session,
