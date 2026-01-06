@@ -31,8 +31,12 @@ export default function LoginPage() {
         return;
       }
 
-      message.success(activeTab === "login" ? "登录成功！" : "注册成功！请检查邮箱确认。");
-      
+      message.success(
+        activeTab === "login"
+          ? "Login successful!"
+          : "Registration successful! Please check your email for confirmation."
+      );
+
       if (activeTab === "login") {
         router.push("/schedule");
       } else {
@@ -40,20 +44,28 @@ export default function LoginPage() {
       }
     } catch (error: unknown) {
       console.error("Auth error:", error);
-      message.error("登录失败，请稍后重试。");
+      message.error("Login failed, please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card style={{ width: "100%", maxWidth: 400, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+    <Card
+      style={{
+        width: "100%",
+        maxWidth: 400,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+      }}
+    >
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <Title level={3} style={{ marginBottom: 8 }}>
-          {activeTab === "login" ? "欢迎回来" : "创建账号"}
+          {activeTab === "login" ? "Welcome Back" : "Create Account"}
         </Title>
         <Text type="secondary">
-          {activeTab === "login" ? "请输入您的凭据以访问您的日程" : "开始管理您的视觉日程"}
+          {activeTab === "login"
+            ? "Please enter your email and password to login"
+            : "Please enter your email and password to create an account"}
         </Text>
       </div>
 
@@ -62,8 +74,8 @@ export default function LoginPage() {
         onChange={setActiveTab}
         centered
         items={[
-          { key: "login", label: "登录" },
-          { key: "register", label: "注册" },
+          { key: "login", label: "Login" },
+          { key: "register", label: "Register" },
         ]}
       />
 
@@ -77,21 +89,21 @@ export default function LoginPage() {
         <Form.Item
           name="email"
           rules={[
-            { required: true, message: "请输入邮箱地址！" },
-            { type: "email", message: "请输入有效的邮箱地址！" },
+            { required: true, message: "Please enter your email address!" },
+            { type: "email", message: "Please enter a valid email address!" },
           ]}
         >
-          <Input prefix={<MailOutlined />} placeholder="邮箱" />
+          <Input prefix={<MailOutlined />} placeholder="Email" />
         </Form.Item>
 
         <Form.Item
           name="password"
           rules={[
-            { required: true, message: "请输入密码！" },
-            { min: 6, message: "密码至少需要6位！" },
+            { required: true, message: "Please enter your password!" },
+            { min: 6, message: "Password must be at least 6 characters!" },
           ]}
         >
-          <Input.Password prefix={<LockOutlined />} placeholder="密码" />
+          <Input.Password prefix={<LockOutlined />} placeholder="Password" />
         </Form.Item>
 
         {activeTab === "register" && (
@@ -99,18 +111,23 @@ export default function LoginPage() {
             name="confirmPassword"
             dependencies={["password"]}
             rules={[
-              { required: true, message: "请确认密码！" },
+              { required: true, message: "Please confirm your password!" },
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue("password") === value) {
                     return Promise.resolve();
                   }
-                  return Promise.reject(new Error("两次输入的密码不一致！"));
+                  return Promise.reject(
+                    new Error("The two passwords do not match!")
+                  );
                 },
               }),
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="确认密码" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Confirm Password"
+            />
           </Form.Item>
         )}
 
@@ -122,7 +139,7 @@ export default function LoginPage() {
             block
             style={{ marginTop: 8 }}
           >
-            {activeTab === "login" ? "登录" : "立即注册"}
+            {activeTab === "login" ? "Login" : "Register Now"}
           </Button>
         </Form.Item>
       </Form>
