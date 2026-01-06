@@ -28,8 +28,8 @@ type ScheduleEvent = {
 const toCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
   id: event.id,
   title: event.title,
-  start: event.start_at,
-  end: event.end_at,
+  start: dayjs(event.start_at).format("HH:mm"), // to 9:00
+  end: dayjs(event.end_at).format("HH:mm"), // to 20:00
   employeeId: event.employee_id,
   color: event.color ?? undefined,
   description: event.description ?? undefined,
@@ -145,7 +145,7 @@ export default function SchedulePage() {
 
   const handleEventSubmit = async (
     eventData: Omit<CalendarEventData, "id">
-  ) => {
+  ): Promise<boolean> => {
     const payload = {
       title: eventData.title,
       description: eventData.description,
@@ -163,7 +163,7 @@ export default function SchedulePage() {
 
       if (response.error) {
         message.error(response.error.message);
-        return;
+        return false;
       }
 
       if (response.data?.event) {
@@ -176,36 +176,21 @@ export default function SchedulePage() {
       }
 
       setEditingEvent(null);
-    } else {
-      const response = await api.post<{ event: ScheduleEvent }>(
-        "/schedule-events",
-        payload
-      );
-
-      if (response.error) {
-        message.error(response.error.message);
-        return;
-      }
-
-      if (response.data?.event) {
-        setEvents((prev) => [
-          ...prev,
-          toCalendarEvent(
-            response.data?.event || {
-              id: "",
-              title: "",
-              description: "",
-              start_at: "",
-              end_at: "",
-              employee_id: "",
-              color: "",
-            }
-          ),
-        ]);
-      } else {
-        await fetchEvents(currentDate);
-      }
+      return true;
     }
+
+    const response = await api.post<{ event: ScheduleEvent }>(
+      "/schedule-events",
+      payload
+    );
+
+    if (response.error) {
+      message.error(response.error.message);
+      return false;
+    }
+
+    await fetchEvents(currentDate);
+    return true;
   };
 
   const handleEventClick = (event: CalendarEventData) => {
@@ -238,19 +223,19 @@ export default function SchedulePage() {
     }, 300); // 等待抽屉关闭动画
   };
 
-  const handleEventDrop = (
+  // 辅助函数：解析时间（支持简单格式和 ISO 格式）
+  const parseTime = (time: string) => {
+    if (time.match(/^\d{2}:\d{2}$/)) {
+      const today = dayjs(currentDate).format("YYYY-MM-DD");
+      return dayjs(`${today} ${time}`);
+    }
+    return dayjs(time);
+  };
+
+  const handleEventDrop = async (
     event: CalendarEventData,
     next: { employeeId: string; start: string }
   ) => {
-    // 辅助函数：解析时间（支持简单格式和 ISO 格式）
-    const parseTime = (time: string) => {
-      if (time.match(/^\d{2}:\d{2}$/)) {
-        const today = dayjs(currentDate).format("YYYY-MM-DD");
-        return dayjs(`${today} ${time}`);
-      }
-      return dayjs(time);
-    };
-
     // 计算原始事件的持续时间（分钟）
     const originalStart = parseTime(event.start);
     const originalEnd = parseTime(event.end);
@@ -267,22 +252,35 @@ export default function SchedulePage() {
       end: newEnd.toISOString(),
     };
 
-    setEvents((prev) =>
-      prev.map((item) => (item.id === event.id ? updatedEvent : item))
-    );
+    // 更新事件列表
+    setEvents((prev) => {
+      const updatedEvents = prev.map((item) =>
+        item.id === event.id
+          ? {
+              ...item,
+              start: newStart.format("HH:mm"),
+              end: newEnd.format("HH:mm"),
+            }
+          : item
+      );
+      return updatedEvents;
+    });
 
-    api
-      .patch(`/schedule-events/${event.id}`, {
-        employee_id: next.employeeId,
-        start_at: updatedEvent.start,
-        end_at: updatedEvent.end,
-      })
-      .then((response) => {
-        if (response.error) {
-          message.error(response.error.message);
-          fetchEvents(currentDate);
-        }
-      });
+    const response = await api.patch<{
+      event: ScheduleEvent;
+      events?: ScheduleEvent[];
+    }>(`/schedule-events/${event.id}`, {
+      employee_id: next.employeeId,
+      start_at: updatedEvent.start,
+      end_at: updatedEvent.end,
+    });
+
+    if (response.error) {
+      // 更新失败，重新获取事件列表
+      message.error(response.error.message);
+      fetchEvents(currentDate);
+      return;
+    }
   };
 
   return (

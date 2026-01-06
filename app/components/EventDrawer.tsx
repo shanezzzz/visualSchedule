@@ -20,7 +20,7 @@ const { RangePicker } = DatePicker;
 interface EventDrawerProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (event: Omit<CalendarEventData, "id">) => void;
+  onSubmit: (event: Omit<CalendarEventData, "id">) => Promise<boolean>;
   onDelete?: (eventId: string) => void;
   employeeIds: string[];
   editingEvent?: CalendarEventData | null;
@@ -41,6 +41,7 @@ export default function EventDrawer({
 }: EventDrawerProps) {
   const [form] = Form.useForm();
   const [color, setColor] = useState("#1677ff");
+  const [submitting, setSubmitting] = useState(false);
 
   // 判断是编辑模式还是新增模式
   const isEditing = !!editingEvent;
@@ -59,12 +60,17 @@ export default function EventDrawer({
         description: values.description,
       };
 
-      onSubmit(eventData);
-      form.resetFields();
-      setColor("#1677ff");
-      onClose();
+      setSubmitting(true);
+      const success = await onSubmit(eventData);
+      if (success) {
+        form.resetFields();
+        setColor("#1677ff");
+        onClose();
+      }
     } catch (error) {
       console.error("Validation failed:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -148,7 +154,7 @@ export default function EventDrawer({
             </Button>
           )}
           <Button onClick={handleClose}>取消</Button>
-          <Button type="primary" onClick={handleSubmit}>
+          <Button type="primary" onClick={handleSubmit} loading={submitting}>
             {isEditing ? "保存" : "确定"}
           </Button>
         </Space>
