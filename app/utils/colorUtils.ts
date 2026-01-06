@@ -1,13 +1,13 @@
 /**
- * 将十六进制颜色转换为 RGB 值
- * @param hex 十六进制颜色，如 "#1677ff" 或 "1677ff"
- * @returns RGB 对象 { r, g, b } 或 null（如果格式无效）
+ * Converts a hex color to an RGB value
+ * @param hex Hex color, e.g. "#1677ff" or "1677ff"
+ * @returns RGB object { r, g, b } or null if format is invalid
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  // 移除 # 号
+  // Remove # sign
   const cleanHex = hex.replace("#", "");
 
-  // 支持 3 位和 6 位十六进制颜色
+  // Support 3-digit and 6-digit hex colors
   if (cleanHex.length === 3) {
     const r = parseInt(cleanHex[0] + cleanHex[0], 16);
     const g = parseInt(cleanHex[1] + cleanHex[1], 16);
@@ -26,12 +26,12 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 }
 
 /**
- * 解析 RGB/RGBA 格式的颜色字符串
- * @param rgbString RGB 格式字符串，如 "rgb(28, 28, 29)" 或 "rgba(28, 28, 29, 0.5)"
- * @returns RGB 对象 { r, g, b } 或 null（如果格式无效）
+ * Parses RGB/RGBA format color string
+ * @param rgbString RGB format string, e.g. "rgb(28, 28, 29)" or "rgba(28, 28, 29, 0.5)"
+ * @returns RGB object { r, g, b } or null if format is invalid
  */
 export function parseRgbString(rgbString: string): { r: number; g: number; b: number } | null {
-  // 匹配 rgb(r, g, b) 或 rgba(r, g, b, a) 格式
+  // Matches rgb(r, g, b) or rgba(r, g, b, a) formats
   const rgbMatch = rgbString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
   
   if (rgbMatch) {
@@ -46,17 +46,17 @@ export function parseRgbString(rgbString: string): { r: number; g: number; b: nu
 }
 
 /**
- * 将颜色字符串转换为 RGB 值（支持十六进制和 RGB 格式）
- * @param color 颜色字符串，支持 "#1677ff"、"rgb(28, 28, 29)" 等格式
- * @returns RGB 对象 { r, g, b } 或 null（如果格式无效）
+ * Converts color string to RGB value (supports hex and RGB formats)
+ * @param color Color string, supports "#1677ff", "rgb(28, 28, 29)", etc.
+ * @returns RGB object { r, g, b } or null if format is invalid
  */
 export function parseColor(color: string): { r: number; g: number; b: number } | null {
-  // 尝试解析为 RGB 格式
+  // Try parsing as RGB format
   if (color.startsWith("rgb")) {
     return parseRgbString(color);
   }
   
-  // 尝试解析为十六进制格式
+  // Try parsing as hex format
   if (color.startsWith("#") || /^[0-9A-Fa-f]{3,6}$/.test(color)) {
     return hexToRgb(color);
   }
@@ -65,14 +65,14 @@ export function parseColor(color: string): { r: number; g: number; b: number } |
 }
 
 /**
- * 计算颜色的相对亮度（根据 WCAG 标准）
- * @param r 红色值 (0-255)
- * @param g 绿色值 (0-255)
- * @param b 蓝色值 (0-255)
- * @returns 相对亮度值 (0-1)
+ * Calculates the relative luminance of a color (based on WCAG standard)
+ * @param r Red value (0-255)
+ * @param g Green value (0-255)
+ * @param b Blue value (0-255)
+ * @returns Relative luminance value (0-1)
  */
 export function calculateLuminance(r: number, g: number, b: number): number {
-  // 将 RGB 值转换为 0-1 范围
+  // Normalize RGB values to 0-1 range
   const [rs, gs, bs] = [r, g, b].map((val) => {
     const normalized = val / 255;
     return normalized <= 0.03928
@@ -80,15 +80,15 @@ export function calculateLuminance(r: number, g: number, b: number): number {
       : Math.pow((normalized + 0.055) / 1.055, 2.4);
   });
 
-  // WCAG 公式计算相对亮度
+  // WCAG formula for relative luminance
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
 /**
- * 根据背景颜色决定文字应该使用黑色还是白色
- * @param backgroundColor 背景颜色（支持十六进制、RGB 格式，如 "#1677ff"、"rgb(28, 28, 29)"）
- * @param threshold 亮度阈值，默认 0.5
- * @returns "#000000" (黑色) 或 "#ffffff" (白色)
+ * Decides whether text should be black or white based on background color
+ * @param backgroundColor Background color (supports hex, RGB format, e.g. "#1677ff", "rgb(28, 28, 29)")
+ * @param threshold Luminance threshold, default 0.5
+ * @returns "#000000" (black) or "#ffffff" (white)
  */
 export function getContrastTextColor(
   backgroundColor: string,
@@ -97,21 +97,21 @@ export function getContrastTextColor(
   const rgb = parseColor(backgroundColor);
 
   if (!rgb) {
-    // 如果颜色格式无效，默认返回白色（更安全的选择）
+    // If color format is invalid, default to white (safer choice)
     return "#ffffff";
   }
 
   const luminance = calculateLuminance(rgb.r, rgb.g, rgb.b);
 
-  // 亮度高于阈值使用黑色文字，否则使用白色文字
+  // Use black text for higher luminance, otherwise use white text
   return luminance > threshold ? "#000000" : "#ffffff";
 }
 
 /**
- * 计算两种颜色之间的对比度（根据 WCAG 标准）
- * @param color1 第一种颜色（十六进制格式）
- * @param color2 第二种颜色（十六进制格式）
- * @returns 对比度值 (1-21)
+ * Calculates the contrast ratio between two colors (based on WCAG standard)
+ * @param color1 First color (hex format)
+ * @param color2 Second color (hex format)
+ * @returns Contrast ratio value (1-21)
  */
 export function calculateContrastRatio(color1: string, color2: string): number {
   const rgb1 = hexToRgb(color1);
@@ -131,11 +131,11 @@ export function calculateContrastRatio(color1: string, color2: string): number {
 }
 
 /**
- * 检查颜色对比度是否符合 WCAG AA 标准
- * @param foreground 前景色（十六进制格式）
- * @param background 背景色（十六进制格式）
- * @param largeText 是否为大文本（≥18pt 或粗体 ≥14pt）
- * @returns 是否符合标准
+ * Checks if color contrast meets WCAG AA standard
+ * @param foreground Foreground color (hex format)
+ * @param background Background color (hex format)
+ * @param largeText Whether it's large text (≥18pt or bold ≥14pt)
+ * @returns Whether it meets the standard
  */
 export function meetsWCAGStandard(
   foreground: string,
