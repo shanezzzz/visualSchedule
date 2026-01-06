@@ -2,6 +2,7 @@
 
 import { CalendarEventData } from "schedule-calendar";
 import dayjs from "dayjs";
+import { ClockCircleOutlined } from "@ant-design/icons";
 import { getContrastTextColor } from "@/app/utils/colorUtils";
 
 interface EventCardProps {
@@ -37,7 +38,7 @@ export default function EventCard({ event, isDragging }: EventCardProps) {
   return (
     <div
       className={`
-        h-full w-full p-2 rounded-lg shadow-sm border-l-4
+        h-full w-full p-3 rounded-lg shadow-sm border-l-4
         transition-all duration-200 overflow-hidden
         ${isDragging ? "opacity-50 shadow-lg scale-105" : "hover:shadow-md"}
       `}
@@ -49,7 +50,7 @@ export default function EventCard({ event, isDragging }: EventCardProps) {
     >
       {
         event.title && (
-          <div className="font-medium text-sm line-clamp-1 mb-1">
+          <div className="font-medium text-md line-clamp-1 mb-3">
             {event.title}
           </div>
         )
@@ -58,19 +59,7 @@ export default function EventCard({ event, isDragging }: EventCardProps) {
       {/* 时间范围 - 只在非紧凑模式下显示 */}
       {!isCompact && (
         <div className="text-xs flex items-center gap-1 opacity-90">
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <ClockCircleOutlined className="w-3 h-3" />
           <span>
             {startTime} - {endTime}
           </span>
@@ -79,7 +68,7 @@ export default function EventCard({ event, isDragging }: EventCardProps) {
 
       {/* 描述 - 只在有足够空间时显示 */}
       {!isCompact && event.description && duration >= 60 && (
-        <div className="text-xs mt-2 line-clamp-2 opacity-80">
+        <div className="text-xs mt-4">
           {event.description}
         </div>
       )}

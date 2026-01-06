@@ -232,6 +232,7 @@ export default function SchedulePage() {
             <EventCard event={params.event} isDragging={params.isDragging} />
           );
         }}
+        eventClassName="rounded-xl shadow-sm"
         onEventDrop={handleEventDrop}
         onEventClick={handleEventClick}
         onTimeLabelClick={handleTimeLabelClick}
