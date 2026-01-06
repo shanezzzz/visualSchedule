@@ -49,11 +49,6 @@ export default function SchedulePage() {
     startTime?: string;
   }>({});
 
-  const employeeIds = useMemo(
-    () => employees.map((employee) => employee.id),
-    [employees]
-  );
-
   const employeeOptions = useMemo(
     () =>
       employees.map((employee) => ({
@@ -310,7 +305,7 @@ export default function SchedulePage() {
         onClose={handleDrawerClose}
         onSubmit={handleEventSubmit}
         onDelete={handleEventDelete}
-        employeeIds={employeeIds}
+        employees={employeeOptions}
         editingEvent={editingEvent}
         initialValues={initialValues}
       />

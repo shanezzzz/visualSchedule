@@ -22,7 +22,7 @@ interface EventDrawerProps {
   onClose: () => void;
   onSubmit: (event: Omit<CalendarEventData, "id">) => Promise<boolean>;
   onDelete?: (eventId: string) => void;
-  employeeIds: string[];
+  employees: Array<{ id: string; name: string }>;
   editingEvent?: CalendarEventData | null;
   initialValues?: {
     employeeId?: string;
@@ -35,7 +35,7 @@ export default function EventDrawer({
   onClose,
   onSubmit,
   onDelete,
-  employeeIds,
+  employees,
   editingEvent,
   initialValues,
 }: EventDrawerProps) {
@@ -199,10 +199,10 @@ export default function EventDrawer({
           name="employeeId"
           rules={[{ required: true, message: "请选择人员" }]}
         >
-          <Select placeholder="请选择人员">
-            {employeeIds.map((id) => (
-              <Select.Option key={id} value={id}>
-                {id}
+          <Select placeholder="请选择人员" showSearch optionFilterProp="children">
+            {employees.map((employee) => (
+              <Select.Option key={employee.id} value={employee.id}>
+                {employee.name}
               </Select.Option>
             ))}
           </Select>
