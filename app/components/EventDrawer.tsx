@@ -140,7 +140,7 @@ export default function EventDrawer({
 
   return (
     <Drawer
-      title={isEditing ? "编辑事件" : "新增事件"}
+      title={isEditing ? "Edit Event" : "Add Event"}
       placement="right"
       width={480}
       open={open}
@@ -150,12 +150,12 @@ export default function EventDrawer({
         <Space className="w-full justify-end">
           {isEditing && onDelete && (
             <Button danger onClick={handleDelete}>
-              删除
+              Delete
             </Button>
           )}
-          <Button onClick={handleClose}>取消</Button>
+          <Button onClick={handleClose}>Cancel</Button>
           <Button type="primary" onClick={handleSubmit} loading={submitting}>
-            {isEditing ? "保存" : "确定"}
+            {isEditing ? "Save" : "Confirm"}
           </Button>
         </Space>
       }
@@ -168,17 +168,17 @@ export default function EventDrawer({
         }}
       >
         <Form.Item
-          label="标题"
+          label="Title"
           name="title"
-          rules={[{ required: true, message: "请输入事件标题" }]}
+          rules={[{ required: true, message: "Please enter event title" }]}
         >
-          <Input placeholder="请输入事件标题" />
+          <Input placeholder="Please enter event title" />
         </Form.Item>
 
         <Form.Item
-          label="时间范围"
+          label="Time Range"
           name="timeRange"
-          rules={[{ required: true, message: "请选择时间范围" }]}
+          rules={[{ required: true, message: "Please select time range" }]}
         >
           <RangePicker
             showTime={{
@@ -195,11 +195,11 @@ export default function EventDrawer({
         </Form.Item>
 
         <Form.Item
-          label="分配人员"
+          label="Assignee"
           name="employeeId"
-          rules={[{ required: true, message: "请选择人员" }]}
+          rules={[{ required: true, message: "Please select an assignee" }]}
         >
-          <Select placeholder="请选择人员" showSearch optionFilterProp="children">
+          <Select placeholder="Please select an assignee" showSearch optionFilterProp="children">
             {employees.map((employee) => (
               <Select.Option key={employee.id} value={employee.id}>
                 {employee.name}
@@ -208,14 +208,14 @@ export default function EventDrawer({
           </Select>
         </Form.Item>
 
-        <Form.Item label="颜色">
+        <Form.Item label="Color">
           <ColorPicker
             value={color}
             onChange={(_, hex) => setColor(hex)}
             showText
             presets={[
               {
-                label: "推荐",
+                label: "Presets",
                 colors: [
                   "#1677ff",
                   "#52c41a",
@@ -231,10 +231,10 @@ export default function EventDrawer({
           />
         </Form.Item>
 
-        <Form.Item label="描述" name="description">
+        <Form.Item label="Description" name="description">
           <TextArea
             rows={4}
-            placeholder="请输入事件描述（可选）"
+            placeholder="Please enter event description (optional)"
             maxLength={500}
             showCount
           />

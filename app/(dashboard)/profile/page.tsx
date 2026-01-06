@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, Typography, Button, Descriptions, Avatar, Space, message, Spin, Divider } from "antd";
-import { UserOutlined, LogoutOutlined, MailOutlined } from "@ant-design/icons";
+import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -47,18 +47,18 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      message.success("已成功退出登录");
+      message.success("Logged out successfully");
       router.push("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      message.error("退出登录失败");
+      message.error("Logout failed");
     }
   };
 
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
-        <Spin size="large" tip="加载用户信息中..." />
+        <Spin size="large" tip="Loading user profile..." />
       </div>
     );
   }
@@ -70,26 +70,26 @@ export default function ProfilePage() {
           <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
             <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
             <div>
-              <Title level={3} style={{ margin: 0 }}>个人信息</Title>
-              <Typography.Text type="secondary">管理您的个人资料和账号设置</Typography.Text>
+              <Title level={3} style={{ margin: 0 }}>Profile Information</Title>
+              <Typography.Text type="secondary">Manage your profile and account settings</Typography.Text>
             </div>
           </div>
 
           <Divider style={{ margin: '12px 0' }} />
 
           <Descriptions 
-            title="基础信息" 
+            title="Basic Information" 
             bordered 
             column={{ xxl: 1, xl: 1, lg: 1, md: 1, sm: 1, xs: 1 }}
           >
-            <Descriptions.Item label="邮箱地址">
-              {user?.email || "未绑定"}
+            <Descriptions.Item label="Email Address">
+              {user?.email || "Not linked"}
             </Descriptions.Item>
-            <Descriptions.Item label="注册时间">
-              {user?.created_at ? new Date(user.created_at).toLocaleString('zh-CN') : "未知"}
+            <Descriptions.Item label="Created At">
+              {user?.created_at ? new Date(user.created_at).toLocaleString('en-US') : "Unknown"}
             </Descriptions.Item>
-            <Descriptions.Item label="最后登录">
-              {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('zh-CN') : "未知"}
+            <Descriptions.Item label="Last Login">
+              {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('en-US') : "Unknown"}
             </Descriptions.Item>
           </Descriptions>
 
@@ -100,7 +100,7 @@ export default function ProfilePage() {
               onClick={handleLogout}
               size="large"
             >
-              退出登录
+              Logout
             </Button>
           </div>
         </Space>

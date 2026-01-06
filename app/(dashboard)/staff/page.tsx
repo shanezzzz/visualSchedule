@@ -110,7 +110,7 @@ export default function StaffPage() {
           await fetchEmployees();
         }
 
-        message.success("员工信息更新成功");
+        message.success("Employee information updated successfully");
       } else {
         const response = await api.post<{ employee: Employee }>("/employees", {
           name: values.name,
@@ -137,12 +137,12 @@ export default function StaffPage() {
           await fetchEmployees();
         }
 
-        message.success("员工添加成功");
+        message.success("Employee added successfully");
       }
 
       handleCloseModal();
     } catch (error) {
-      console.error("表单验证失败:", error);
+      console.error("Validation failed:", error);
     } finally {
       setSaving(false);
     }
@@ -161,29 +161,29 @@ export default function StaffPage() {
       }
 
       setEmployees((prev) => prev.filter((emp) => emp.id !== employee.id));
-      message.success("员工删除成功");
+      message.success("Employee deleted successfully");
     } catch (error) {
-      console.error("删除员工失败:", error);
-      message.error("删除员工失败");
+      console.error("Failed to delete employee:", error);
+      message.error("Failed to delete employee");
     }
   };
 
   // 表格列定义
   const columns: ColumnsType<Employee> = [
     {
-      title: "姓名",
+      title: "Name",
       dataIndex: "name",
       key: "name",
       width: 300,
     },
     {
-      title: "角色",
+      title: "Role",
       dataIndex: "role",
       key: "role",
       width: 300,
     },
     {
-      title: "操作",
+      title: "Action",
       key: "action",
       width: 200,
       render: (_, record) => (
@@ -193,15 +193,15 @@ export default function StaffPage() {
             icon={<EditOutlined />}
             onClick={() => handleOpenModal(record)}
           >
-            编辑
+            Edit
           </Button>
-          <Popconfirm title={`确定删除员工 ${record.name} 吗？`} onConfirm={() => handleDelete(record)}>
+          <Popconfirm title={`Are you sure you want to delete employee ${record.name}?`} onConfirm={() => handleDelete(record)}>
             <Button
               type="link"
               danger
               icon={<DeleteOutlined />}
             >
-              删除
+              Delete
             </Button>
           </Popconfirm>
         </Space>
@@ -214,14 +214,14 @@ export default function StaffPage() {
       <Card>
         <div className="flex justify-between items-center mb-6">
           <Title level={3} style={{ margin: 0 }}>
-            员工管理
+            Staff Management
           </Title>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => handleOpenModal()}
           >
-            添加员工
+            Add Employee
           </Button>
         </div>
 
@@ -233,33 +233,33 @@ export default function StaffPage() {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 名员工`,
+            showTotal: (total) => `Total ${total} employees`,
           }}
         />
       </Card>
 
       {/* 新增/编辑员工弹窗 */}
       <Modal
-        title={editingEmployee ? "编辑员工" : "添加员工"}
+        title={editingEmployee ? "Edit Employee" : "Add Employee"}
         open={isModalOpen}
         onOk={handleSubmit}
         onCancel={handleCloseModal}
-        okText={editingEmployee ? "保存" : "添加"}
+        okText={editingEmployee ? "Save" : "Add"}
         confirmLoading={saving}
-        cancelText="取消"
+        cancelText="Cancel"
         width={500}
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item
-            label="姓名"
+            label="Name"
             name="name"
-            rules={[{ required: true, message: "请输入员工姓名" }]}
+            rules={[{ required: true, message: "Please enter employee name" }]}
           >
-            <Input placeholder="请输入员工姓名" />
+            <Input placeholder="Please enter employee name" />
           </Form.Item>
 
-          <Form.Item label="角色" name="role">
-            <Input placeholder="例如: 开发工程师" />
+          <Form.Item label="Role" name="role">
+            <Input placeholder="e.g. Software Engineer" />
           </Form.Item>
         </Form>
       </Modal>
