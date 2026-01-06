@@ -1,94 +1,123 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DayView, CalendarEventData } from "schedule-calendar";
+import { message, Spin } from "antd";
 import EventDrawer from "@/app/components/EventDrawer";
 import EventCard from "@/app/components/EventCard";
+import api from "@/app/lib/axios";
 import dayjs from "dayjs";
 
-const EMPLOYEE_IDS = ["john", "jane", "mike"];
-
-// Mock 事件数据
-const getMockEvents = (): CalendarEventData[] => {
-  return [
-    {
-      id: "mock-1",
-      title: "团队晨会",
-      start: "09:00",
-      end: "09:30",
-      employeeId: "john",
-      color: "#1677ff",
-      description: "每日站会，同步项目进度",
-    },
-    {
-      id: "mock-2",
-      title: "客户会议",
-      start: "10:00",
-      end: "11:30",
-      employeeId: "jane",
-      color: "#52c41a",
-      description: "与客户讨论新项目需求，准备产品演示材料",
-    },
-    {
-      id: "mock-3",
-      title: "午餐",
-      start: "12:00",
-      end: "13:00",
-      employeeId: "mike",
-      color: "#faad14",
-    },
-    {
-      id: "mock-4",
-      title: "代码审查",
-      start: "14:00",
-      end: "14:15",
-      employeeId: "john",
-      color: "#722ed1",
-      description: "审查 PR #123",
-    },
-    {
-      id: "mock-5",
-      title: "产品设计讨论",
-      start: "15:00",
-      end: "17:00",
-      employeeId: "jane",
-      color: "#eb2f96",
-      description: "讨论新功能的 UI/UX 设计方案，包括用户流程和交互细节",
-    },
-    {
-      id: "mock-6",
-      title: "项目冲刺会议",
-      start: "16:00",
-      end: "17:00",
-      employeeId: "mike",
-      color: "#13c2c2",
-      description: "Sprint 规划和任务分配",
-    },
-  ];
+type Employee = {
+  id: string;
+  name: string;
+  role?: string;
+  color?: string | null;
 };
+
+type ScheduleEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  start_at: string;
+  end_at: string;
+  employee_id: string;
+  color: string | null;
+};
+
+const toCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
+  id: event.id,
+  title: event.title,
+  start: event.start_at,
+  end: event.end_at,
+  employeeId: event.employee_id,
+  color: event.color ?? undefined,
+  description: event.description ?? undefined,
+});
 
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<CalendarEventData[]>(getMockEvents());
+  const [events, setEvents] = useState<CalendarEventData[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEventData | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventData | null>(
+    null
+  );
   const [initialValues, setInitialValues] = useState<{
     employeeId?: string;
     startTime?: string;
   }>({});
 
-  // 调试：打印事件数据
-  console.log("Current events:", events);
-  console.log("Current date:", currentDate);
+  const employeeIds = useMemo(
+    () => employees.map((employee) => employee.id),
+    [employees]
+  );
+
+  const employeeOptions = useMemo(
+    () =>
+      employees.map((employee) => ({
+        id: employee.id,
+        name: employee.name,
+      })),
+    [employees]
+  );
+
+  const fetchEmployees = useCallback(async () => {
+    const response = await api.get<{ employees: Employee[] }>("/employees");
+
+    if (response.error) {
+      message.error(response.error.message);
+      return;
+    }
+
+    setEmployees(response.data?.employees ?? []);
+  }, []);
+
+  const fetchEvents = useCallback(async (date: Date) => {
+    setLoading(true);
+    const start = dayjs(date).startOf("day").toISOString();
+    const end = dayjs(date).endOf("day").toISOString();
+    const params = new URLSearchParams({ start, end });
+    const response = await api.get<{ events: ScheduleEvent[] }>(
+      `/schedule-events?${params.toString()}`
+    );
+
+    if (response.error) {
+      message.error(response.error.message);
+      setLoading(false);
+      return;
+    }
+
+    const fetchedEvents = response.data?.events ?? [];
+    setEvents(fetchedEvents.map(toCalendarEvent));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchEvents(currentDate);
+  }, [currentDate, fetchEvents]);
+
+  if (loading && events.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spin size="large" tip="加载日程中..." />
+      </div>
+    );
+  }
 
   const handleTimeLabelClick = (
     timeLabel: string,
-    index: number,
+    _index: number,
     timeSlot: string,
     employee: { id: string; name: string }
   ) => {
-    console.log("Time label clicked:", { timeLabel, index, timeSlot, employee });
-
     // 构建完整的日期时间
     // timeSlot 可能是 ISO 字符串或只是时间标签
     let startTime: string;
@@ -98,7 +127,7 @@ export default function SchedulePage() {
       startTime = timeSlot;
     } else {
       // 只是时间标签（如 "09:00"），需要组合今天的日期
-      const today = new Date();
+      const today = new Date(currentDate);
       const [hours, minutes] = timeLabel.split(":").map(Number);
       today.setHours(hours, minutes || 0, 0, 0);
       startTime = today.toISOString();
@@ -114,52 +143,89 @@ export default function SchedulePage() {
     setDrawerOpen(true);
   };
 
-  const handleEventSubmit = (eventData: Omit<CalendarEventData, "id">) => {
-    console.log("Event submitted:", eventData);
-
-    // 转换为简单时间格式
-    const start = dayjs(eventData.start).format("HH:mm");
-    const end = dayjs(eventData.end).format("HH:mm");
+  const handleEventSubmit = async (
+    eventData: Omit<CalendarEventData, "id">
+  ) => {
+    const payload = {
+      title: eventData.title,
+      description: eventData.description,
+      start_at: eventData.start,
+      end_at: eventData.end,
+      employee_id: eventData.employeeId,
+      color: eventData.color,
+    };
 
     if (editingEvent) {
-      // 编辑模式：更新现有事件
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === editingEvent.id
-            ? {
-                ...eventData,
-                start,
-                end,
-                id: e.id,
-              }
-            : e
-        )
+      const response = await api.patch<{ event: ScheduleEvent }>(
+        `/schedule-events/${editingEvent.id}`,
+        payload
       );
+
+      if (response.error) {
+        message.error(response.error.message);
+        return;
+      }
+
+      if (response.data?.event) {
+        const updated = toCalendarEvent(response.data.event);
+        setEvents((prev) =>
+          prev.map((event) => (event.id === updated.id ? updated : event))
+        );
+      } else {
+        await fetchEvents(currentDate);
+      }
+
       setEditingEvent(null);
     } else {
-      // 新增模式：创建新事件
-      const newEvent: CalendarEventData = {
-        ...eventData,
-        start,
-        end,
-        id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      };
-      setEvents((prev) => [...prev, newEvent]);
+      const response = await api.post<{ event: ScheduleEvent }>(
+        "/schedule-events",
+        payload
+      );
+
+      if (response.error) {
+        message.error(response.error.message);
+        return;
+      }
+
+      if (response.data?.event) {
+        setEvents((prev) => [
+          ...prev,
+          toCalendarEvent(
+            response.data?.event || {
+              id: "",
+              title: "",
+              description: "",
+              start_at: "",
+              end_at: "",
+              employee_id: "",
+              color: "",
+            }
+          ),
+        ]);
+      } else {
+        await fetchEvents(currentDate);
+      }
     }
   };
 
   const handleEventClick = (event: CalendarEventData) => {
-    console.log("Event clicked:", event);
     // 设置编辑事件并打开抽屉
     setEditingEvent(event);
     setInitialValues({}); // 清空初始值，使用 editingEvent
     setDrawerOpen(true);
   };
 
-  const handleEventDelete = (eventId: string) => {
-    console.log("Event deleted:", eventId);
-    // 删除事件
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+  const handleEventDelete = async (eventId: string) => {
+    const response = await api.delete<{ event: ScheduleEvent }>(
+      `/schedule-events/${eventId}`
+    );
+
+    if (response.error) {
+      message.error(response.error.message);
+      return;
+    }
+
+    setEvents((prev) => prev.filter((event) => event.id !== eventId));
     setEditingEvent(null);
   };
 
@@ -176,20 +242,13 @@ export default function SchedulePage() {
     event: CalendarEventData,
     next: { employeeId: string; start: string }
   ) => {
-    console.log("Event dropped:", { event, next });
-
     // 辅助函数：解析时间（支持简单格式和 ISO 格式）
     const parseTime = (time: string) => {
       if (time.match(/^\d{2}:\d{2}$/)) {
-        const today = dayjs().format("YYYY-MM-DD");
+        const today = dayjs(currentDate).format("YYYY-MM-DD");
         return dayjs(`${today} ${time}`);
       }
       return dayjs(time);
-    };
-
-    // 辅助函数：格式化为简单时间格式
-    const formatToSimpleTime = (time: dayjs.Dayjs) => {
-      return time.format("HH:mm");
     };
 
     // 计算原始事件的持续时间（分钟）
@@ -201,19 +260,29 @@ export default function SchedulePage() {
     const newStart = parseTime(next.start);
     const newEnd = newStart.add(duration, "minute");
 
-    // 更新事件的员工和时间
+    const updatedEvent: CalendarEventData = {
+      ...event,
+      employeeId: next.employeeId,
+      start: newStart.toISOString(),
+      end: newEnd.toISOString(),
+    };
+
     setEvents((prev) =>
-      prev.map((e) =>
-        e.id === event.id
-          ? {
-              ...e,
-              employeeId: next.employeeId,
-              start: formatToSimpleTime(newStart),
-              end: formatToSimpleTime(newEnd),
-            }
-          : e
-      )
+      prev.map((item) => (item.id === event.id ? updatedEvent : item))
     );
+
+    api
+      .patch(`/schedule-events/${event.id}`, {
+        employee_id: next.employeeId,
+        start_at: updatedEvent.start,
+        end_at: updatedEvent.end,
+      })
+      .then((response) => {
+        if (response.error) {
+          message.error(response.error.message);
+          fetchEvents(currentDate);
+        }
+      });
   };
 
   return (
@@ -225,7 +294,7 @@ export default function SchedulePage() {
         use24HourFormat
         currentDate={currentDate}
         onDateChange={setCurrentDate}
-        employeeIds={EMPLOYEE_IDS}
+        employees={employeeOptions}
         events={events}
         renderEvent={(params) => {
           return (
@@ -243,7 +312,7 @@ export default function SchedulePage() {
         onClose={handleDrawerClose}
         onSubmit={handleEventSubmit}
         onDelete={handleEventDelete}
-        employeeIds={EMPLOYEE_IDS}
+        employeeIds={employeeIds}
         editingEvent={editingEvent}
         initialValues={initialValues}
       />
