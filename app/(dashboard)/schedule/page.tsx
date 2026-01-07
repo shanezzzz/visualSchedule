@@ -99,14 +99,6 @@ export default function SchedulePage() {
     fetchEvents(currentDate);
   }, [currentDate, fetchEvents]);
 
-  if (loading && events.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Spin size="large" tip="Loading schedule..." />
-      </div>
-    );
-  }
-
   const handleTimeLabelClick = (
     timeLabel: string,
     _index: number,
@@ -280,25 +272,27 @@ export default function SchedulePage() {
 
   return (
     <div className="h-full">
-      <DayView
-        startHour={9}
-        endHour={20}
-        stepMinutes={15}
-        use24HourFormat
-        currentDate={currentDate}
-        onDateChange={setCurrentDate}
-        employees={employeeOptions}
-        events={events}
-        renderEvent={(params) => {
-          return (
-            <EventCard event={params.event} isDragging={params.isDragging} />
-          );
-        }}
-        eventClassName="rounded-xl shadow-sm"
-        onEventDrop={handleEventDrop}
-        onEventClick={handleEventClick}
-        onTimeLabelClick={handleTimeLabelClick}
-      />
+      <Spin spinning={loading} tip="Loading schedule...">
+        <DayView
+          startHour={9}
+          endHour={20}
+          stepMinutes={15}
+          use24HourFormat
+          currentDate={currentDate}
+          onDateChange={setCurrentDate}
+          employees={employeeOptions}
+          events={events}
+          renderEvent={(params) => {
+            return (
+              <EventCard event={params.event} isDragging={params.isDragging} />
+            );
+          }}
+          eventClassName="rounded-xl shadow-sm"
+          onEventDrop={handleEventDrop}
+          onEventClick={handleEventClick}
+          onTimeLabelClick={handleTimeLabelClick}
+        />
+      </Spin>
 
       <EventDrawer
         open={drawerOpen}
