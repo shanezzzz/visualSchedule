@@ -271,28 +271,32 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="h-full">
-      <Spin spinning={loading} tip="Loading schedule...">
-        <DayView
-          startHour={9}
-          endHour={20}
-          stepMinutes={15}
-          use24HourFormat
-          currentDate={currentDate}
-          onDateChange={setCurrentDate}
-          employees={employeeOptions}
-          events={events}
-          renderEvent={(params) => {
-            return (
-              <EventCard event={params.event} isDragging={params.isDragging} />
-            );
-          }}
-          eventClassName="rounded-xl shadow-sm"
-          onEventDrop={handleEventDrop}
-          onEventClick={handleEventClick}
-          onTimeLabelClick={handleTimeLabelClick}
-        />
-      </Spin>
+    <div className="h-full relative">
+      <DayView
+        startHour={9}
+        endHour={20}
+        stepMinutes={15}
+        use24HourFormat
+        currentDate={currentDate}
+        onDateChange={setCurrentDate}
+        employees={employeeOptions}
+        events={events}
+        renderEvent={(params) => {
+          return (
+            <EventCard event={params.event} isDragging={params.isDragging} />
+          );
+        }}
+        eventClassName="rounded-xl shadow-sm"
+        onEventDrop={handleEventDrop}
+        onEventClick={handleEventClick}
+        onTimeLabelClick={handleTimeLabelClick}
+      />
+
+      {loading && (
+        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+          <Spin size="large" tip="Loading schedule..." />
+        </div>
+      )}
 
       <EventDrawer
         open={drawerOpen}
