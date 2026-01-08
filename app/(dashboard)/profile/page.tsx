@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, Typography, Button, Descriptions, Avatar, Space, message, Spin, Divider } from "antd";
 import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import api from "@/app/lib/axios";
 
@@ -18,7 +17,6 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
 
   const getUser = useCallback(async () => {
     try {
@@ -46,7 +44,13 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      const response = await api.post("/auth/logout");
+
+      if (response.error) {
+        message.error(response.error.message);
+        return;
+      }
+
       message.success("Logged out successfully");
       router.push("/login");
     } catch (error) {
