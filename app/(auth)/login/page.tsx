@@ -8,6 +8,7 @@ import api from "@/app/lib/axios";
 
 const { Title, Text } = Typography;
 
+// 认证响应的数据类型
 interface AuthResponse {
   user: {
     id: string;
@@ -15,14 +16,23 @@ interface AuthResponse {
   } | null;
 }
 
+/**
+ * 登录/注册页面组件
+ * 支持用户登录和注册功能，使用标签页切换
+ */
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("login");
+  const [activeTab, setActiveTab] = useState("login"); // 当前激活的标签页：login 或 register
 
+  /**
+   * 表单提交处理函数
+   * @param values - 表单数据（邮箱和密码）
+   */
   const onFinish = async (values: Record<string, string>) => {
     setLoading(true);
     try {
+      // 根据当前标签页选择对应的 API 端点
       const endpoint = activeTab === "login" ? "/auth/login" : "/auth/register";
       const response = await api.post<AuthResponse>(endpoint, values);
 
@@ -31,12 +41,14 @@ export default function LoginPage() {
         return;
       }
 
+      // 显示成功提示
       message.success(
         activeTab === "login"
           ? "Login successful!"
           : "Registration successful! Please check your email for confirmation."
       );
 
+      // 登录成功后跳转到日程页面，注册成功后切换到登录标签页
       if (activeTab === "login") {
         router.push("/schedule");
       } else {

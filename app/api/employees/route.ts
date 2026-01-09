@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// 员工数据的类型定义
 type EmployeePayload = {
   name?: string;
   role?: string;
   color?: string;
 };
 
+/**
+ * 获取CORS响应头
+ * @returns CORS配置的响应头对象
+ */
 function getCorsHeaders() {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -20,14 +25,23 @@ function getCorsHeaders() {
   return headers;
 }
 
+/**
+ * 处理OPTIONS预检请求
+ * 用于CORS跨域请求的预检
+ */
 export async function OPTIONS() {
   const corsHeaders = getCorsHeaders();
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
+/**
+ * 获取所有员工列表
+ * @returns 返回员工列表或错误信息
+ */
 export async function GET() {
   const corsHeaders = getCorsHeaders();
 
+  // 初始化Supabase客户端
   let supabase;
   try {
     supabase = await createSupabaseServerClient();
@@ -38,6 +52,7 @@ export async function GET() {
     );
   }
 
+  // 验证用户是否已登录
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) {
     return NextResponse.json(
@@ -46,11 +61,13 @@ export async function GET() {
     );
   }
 
+  // 查询所有员工，按创建时间升序排列
   const { data, error } = await supabase
     .from("employees")
     .select("*")
     .order("created_at", { ascending: true });
 
+  // 处理查询错误
   if (error) {
     return NextResponse.json(
       { error: error.message },
@@ -58,13 +75,20 @@ export async function GET() {
     );
   }
 
+  // 返回员工列表
   return NextResponse.json({ employees: data }, { headers: corsHeaders });
 }
 
+/**
+ * 创建新员工
+ * @param request - HTTP请求对象
+ * @returns 返回新创建的员工信息或错误信息
+ */
 export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders();
   let payload: EmployeePayload;
 
+  // 解析请求体中的JSON数据
   try {
     payload = (await request.json()) as EmployeePayload;
   } catch {
@@ -74,6 +98,7 @@ export async function POST(request: Request) {
     );
   }
 
+  // 验证必填字段
   if (!payload.name) {
     return NextResponse.json(
       { error: "Name is required." },
@@ -81,6 +106,7 @@ export async function POST(request: Request) {
     );
   }
 
+  // 初始化Supabase客户端
   let supabase;
   try {
     supabase = await createSupabaseServerClient();
@@ -91,6 +117,7 @@ export async function POST(request: Request) {
     );
   }
 
+  // 验证用户是否已登录
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) {
     return NextResponse.json(
@@ -99,6 +126,7 @@ export async function POST(request: Request) {
     );
   }
 
+  // 插入新员工数据
   const { data, error } = await supabase
     .from("employees")
     .insert({
@@ -109,6 +137,7 @@ export async function POST(request: Request) {
     .select("*")
     .single();
 
+  // 处理插入错误
   if (error) {
     return NextResponse.json(
       { error: error.message },
@@ -116,5 +145,6 @@ export async function POST(request: Request) {
     );
   }
 
+  // 返回新创建的员工信息
   return NextResponse.json({ employee: data }, { headers: corsHeaders });
 }
