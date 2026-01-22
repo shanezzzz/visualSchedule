@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { App as AntdApp } from "antd";
+import { MessageProvider } from "./components/MessageProvider";
 import "antd/dist/reset.css";
 import "./globals.css";
 
@@ -38,7 +40,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Ant Design 组件注册器，用于服务端渲染样式 */}
-        <AntdRegistry>{children}</AntdRegistry>
+        <AntdRegistry>
+          <AntdApp>
+            <MessageProvider>{children}</MessageProvider>
+          </AntdApp>
+        </AntdRegistry>
       </body>
     </html>
   );

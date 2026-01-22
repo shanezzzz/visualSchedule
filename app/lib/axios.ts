@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getGlobalMessage } from "@/app/components/MessageProvider";
 
 export type ApiError = {
   message: string;
@@ -56,6 +57,37 @@ function handleUnauthorized(status?: number) {
   }
 }
 
+function showErrorNotification(error: ApiError) {
+  // Only show notifications on the client side
+  if (typeof window !== "undefined") {
+    const message = getGlobalMessage();
+
+    // If message API is not ready yet, fallback to console
+    if (!message) {
+      console.error("Error:", error.message);
+      return;
+    }
+
+    // Use different message types based on status code
+    if (error.status === 401) {
+      // Check if we're on the login page - show specific error
+      if (window.location.pathname === "/login") {
+        message.error(error?.message ?? "Invalid email or password");
+      } else {
+        message.warning("Session expired. Redirecting to login...");
+      }
+    } else if (error.status === 403) {
+      message.error("Access denied");
+    } else if (error.status === 404) {
+      message.warning("Resource not found");
+    } else if (error.status && error.status >= 500) {
+      message.error("Server error. Please try again later.");
+    } else {
+      message.error(error?.message ?? "An error occurred");
+    }
+  }
+}
+
 async function request<T>(
   method: "get" | "post" | "put" | "delete" | "patch",
   url: string,
@@ -71,6 +103,7 @@ async function request<T>(
   } catch (error) {
     const parsed = parseError(error);
     handleUnauthorized(parsed.status);
+    showErrorNotification(parsed);
     return { data: null, error: parsed };
   }
 }

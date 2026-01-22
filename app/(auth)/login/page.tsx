@@ -37,7 +37,6 @@ export default function LoginPage() {
       const response = await api.post<AuthResponse>(endpoint, values);
 
       if (response.error) {
-        message.error(response.error.message);
         return;
       }
 
