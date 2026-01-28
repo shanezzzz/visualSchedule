@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ScheduleCalendar, CalendarEventData } from "schedule-calendar";
+import { ScheduleCalendar } from "schedule-calendar";
+import type {
+  CalendarEventData,
+  CalendarGridDropResult,
+  DayViewEmployee,
+  ScheduleCalendarView
+} from "schedule-calendar";
 import { message, Spin } from "antd";
 import EventDrawer from "@/app/components/EventDrawer";
 import EventCard from "@/app/components/EventCard";
@@ -33,7 +39,6 @@ const WEEK_STARTS_ON = 1; // 0 = Sunday, 1 = Monday
 const HEATMAP_COLORS = ["#ffedd5", "#fdba74", "#fb923c", "#f97316", "#dc2626"];
 const MAX_INTERVAL_LABELS = 3;
 
-type CalendarView = "day" | "week" | "month";
 const START_HOUR = 9;
 const END_HOUR = 20;
 
@@ -49,7 +54,8 @@ const toDayCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
   end: dayjs(event.end_at).format("HH:mm"), // 转换为 20:00 格式
   employeeId: event.employee_id,
   color: event.color ?? undefined,
-  description: event.description ?? undefined
+  description: event.description ?? undefined,
+  date: dayjs(event.start_at).format("YYYY-MM-DD")
 });
 
 const getHeatmapColor = (ratio: number) => {
@@ -74,7 +80,7 @@ const formatIntervals = (intervals: Array<{ start: Dayjs; end: Dayjs }>) => {
     : labels.join(" · ");
 };
 
-const getRangeForView = (date: Date, view: CalendarView) => {
+const getRangeForView = (date: Date, view: ScheduleCalendarView) => {
   const base = dayjs(date);
   if (view === "day") {
     return { start: base.startOf("day"), end: base.endOf("day") };
@@ -96,7 +102,7 @@ const getRangeForView = (date: Date, view: CalendarView) => {
  */
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // 当前显示的日期
-  const [view, setView] = useState<CalendarView>("day");
+  const [view, setView] = useState<ScheduleCalendarView>("day");
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]); // 事件列表
   const [employees, setEmployees] = useState<Employee[]>([]); // 员工列表
   const [loading, setLoading] = useState(true); // 加载状态
@@ -111,7 +117,7 @@ export default function SchedulePage() {
   const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
 
   // 将员工列表转换为日历组件所需的格式
-  const employeeOptions = useMemo(
+  const employeeOptions = useMemo<DayViewEmployee[]>(
     () =>
       employees.map((employee) => ({
         id: employee.id,
@@ -139,7 +145,7 @@ export default function SchedulePage() {
    * @param date - 要查询的日期
    */
   const fetchEvents = useCallback(
-    async (date: Date, viewType: CalendarView) => {
+    async (date: Date, viewType: ScheduleCalendarView) => {
       setLoading(true);
       const { start: rangeStart, end: rangeEnd } = getRangeForView(
         date,
@@ -185,7 +191,7 @@ export default function SchedulePage() {
     timeLabel: string,
     _index: number,
     timeSlot: string,
-    employee: { id: string; name: string }
+    employee: DayViewEmployee
   ) => {
     let startTime: string;
 
@@ -327,19 +333,10 @@ export default function SchedulePage() {
    */
   const handleEventDrop = async (
     event: CalendarEventData,
-    next: { employeeId: string; start: string }
+    next: CalendarGridDropResult
   ) => {
-    // 计算原始事件的持续时间（分钟）
-    const originalStart = parseTime(event.start);
-    const originalEnd = parseTime(event.end);
-    const duration = originalEnd.diff(originalStart, "minute");
-
-    // 解析新的开始时间并计算新的结束时间
-    const newStart = parseTime(next.start);
-    const newEnd = newStart.add(duration, "minute");
-
-    const updatedStart = newStart.toISOString();
-    const updatedEnd = newEnd.toISOString();
+    const updatedStart = parseTime(next.start).toISOString();
+    const updatedEnd = parseTime(next.end).toISOString();
 
     // 立即更新 UI
     setScheduleEvents((prev) =>
@@ -550,7 +547,10 @@ export default function SchedulePage() {
           stepMinutes: 15,
           use24HourFormat: true,
           employees: employeeOptions,
-          renderEvent: (params) => (
+          renderEvent: (params: {
+            event: CalendarEventData;
+            isDragging: boolean;
+          }) => (
             <EventCard event={params.event} isDragging={params.isDragging} />
           ),
           eventClassName: "rounded-xl shadow-sm",

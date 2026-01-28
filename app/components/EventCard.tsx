@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarEventData } from "schedule-calendar";
+import type { CalendarEventData } from "schedule-calendar";
 import dayjs from "dayjs";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { getContrastTextColor } from "@/app/utils/colorUtils";
@@ -12,17 +12,17 @@ interface EventCardProps {
 
 export default function EventCard({ event, isDragging }: EventCardProps) {
   // 处理简单时间格式（如 "09:00"）或完整日期时间
-  const parseTime = (time: string) => {
+  const parseTime = (time: string, date?: string) => {
     // 如果是简单时间格式（HH:mm），需要添加今天的日期
     if (time.match(/^\d{2}:\d{2}$/)) {
-      const today = dayjs().format("YYYY-MM-DD");
-      return dayjs(`${today} ${time}`);
+      const fallbackDate = date ?? dayjs().format("YYYY-MM-DD");
+      return dayjs(`${fallbackDate} ${time}`);
     }
     return dayjs(time);
   };
 
-  const startParsed = parseTime(event.start);
-  const endParsed = parseTime(event.end);
+  const startParsed = parseTime(event.start, event.date);
+  const endParsed = parseTime(event.end, event.date);
 
   const startTime = startParsed.format("HH:mm");
   const endTime = endParsed.format("HH:mm");

@@ -10,7 +10,7 @@ import {
   Space,
   ColorPicker
 } from "antd";
-import { CalendarEventData } from "schedule-calendar";
+import type { CalendarEventData } from "schedule-calendar";
 import dayjs, { Dayjs } from "dayjs";
 import { useState } from "react";
 
@@ -85,16 +85,16 @@ export default function EventDrawer({
     if (open) {
       if (editingEvent) {
         // 编辑模式：回显事件数据
-        const parseTime = (time: string) => {
+        const parseTime = (time: string, date?: string) => {
           if (time.match(/^\d{2}:\d{2}$/)) {
-            const today = dayjs().format("YYYY-MM-DD");
-            return dayjs(`${today} ${time}`);
+            const fallbackDate = date ?? dayjs().format("YYYY-MM-DD");
+            return dayjs(`${fallbackDate} ${time}`);
           }
           return dayjs(time);
         };
 
-        const startTime = parseTime(editingEvent.start);
-        const endTime = parseTime(editingEvent.end);
+        const startTime = parseTime(editingEvent.start, editingEvent.date);
+        const endTime = parseTime(editingEvent.end, editingEvent.date);
 
         form.setFieldsValue({
           title: editingEvent.title,
