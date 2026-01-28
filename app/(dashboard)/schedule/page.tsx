@@ -27,6 +27,8 @@ type ScheduleEvent = {
   color: string | null;
 };
 
+const TIMEZONE_STORAGE_KEY = "visual-schedule.timezone";
+
 /**
  * 将后端事件数据转换为日历组件所需的格式
  * @param event - 后端返回的事件数据
@@ -39,7 +41,7 @@ const toCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
   end: dayjs(event.end_at).format("HH:mm"), // 转换为 20:00 格式
   employeeId: event.employee_id,
   color: event.color ?? undefined,
-  description: event.description ?? undefined,
+  description: event.description ?? undefined
 });
 
 /**
@@ -52,18 +54,21 @@ export default function SchedulePage() {
   const [employees, setEmployees] = useState<Employee[]>([]); // 员工列表
   const [loading, setLoading] = useState(true); // 加载状态
   const [drawerOpen, setDrawerOpen] = useState(false); // 抽屉是否打开
-  const [editingEvent, setEditingEvent] = useState<CalendarEventData | null>(null); // 正在编辑的事件
+  const [editingEvent, setEditingEvent] = useState<CalendarEventData | null>(
+    null
+  ); // 正在编辑的事件
   const [initialValues, setInitialValues] = useState<{
     employeeId?: string;
     startTime?: string;
   }>({}); // 新建事件时的初始值
+  const [timeZone, setTimeZone] = useState<string | null>(null);
 
   // 将员工列表转换为日历组件所需的格式
   const employeeOptions = useMemo(
     () =>
       employees.map((employee) => ({
         id: employee.id,
-        name: employee.name,
+        name: employee.name
       })),
     [employees]
   );
@@ -146,7 +151,7 @@ export default function SchedulePage() {
     // 设置初始值：点击的员工和时间
     setInitialValues({
       employeeId: employee.id,
-      startTime: startTime,
+      startTime: startTime
     });
     setDrawerOpen(true);
   };
@@ -165,7 +170,7 @@ export default function SchedulePage() {
       start_at: eventData.start,
       end_at: eventData.end,
       employee_id: eventData.employeeId,
-      color: eventData.color,
+      color: eventData.color
     };
 
     if (editingEvent) {
@@ -282,7 +287,7 @@ export default function SchedulePage() {
     const updatedEvent: CalendarEventData = {
       ...event,
       start: newStart.toISOString(),
-      end: newEnd.toISOString(),
+      end: newEnd.toISOString()
     };
 
     // 立即更新 UI
@@ -293,7 +298,7 @@ export default function SchedulePage() {
               ...item,
               employeeId: next.employeeId,
               start: newStart.format("HH:mm"),
-              end: newEnd.format("HH:mm"),
+              end: newEnd.format("HH:mm")
             }
           : item
       );
@@ -307,7 +312,7 @@ export default function SchedulePage() {
     }>(`/schedule-events/${event.id}`, {
       employee_id: next.employeeId,
       start_at: updatedEvent.start,
-      end_at: updatedEvent.end,
+      end_at: updatedEvent.end
     });
 
     if (response.error) {
@@ -317,6 +322,20 @@ export default function SchedulePage() {
       return;
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedTimeZone = window.localStorage.getItem(TIMEZONE_STORAGE_KEY);
+    if (storedTimeZone) {
+      setTimeZone(storedTimeZone);
+      return;
+    }
+    const resolvedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (resolvedTimeZone) {
+      setTimeZone(resolvedTimeZone);
+      window.localStorage.setItem(TIMEZONE_STORAGE_KEY, resolvedTimeZone);
+    }
+  }, []);
 
   return (
     <div className="h-full relative">
