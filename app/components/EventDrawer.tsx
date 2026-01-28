@@ -8,7 +8,7 @@ import {
   Select,
   Button,
   Space,
-  ColorPicker,
+  ColorPicker
 } from "antd";
 import { CalendarEventData } from "schedule-calendar";
 import dayjs, { Dayjs } from "dayjs";
@@ -37,7 +37,7 @@ export default function EventDrawer({
   onDelete,
   employees,
   editingEvent,
-  initialValues,
+  initialValues
 }: EventDrawerProps) {
   const [form] = Form.useForm();
   const [color, setColor] = useState("#1677ff");
@@ -57,7 +57,7 @@ export default function EventDrawer({
         end: end.toISOString(),
         employeeId: values.employeeId,
         color: color,
-        description: values.description,
+        description: values.description
       };
 
       setSubmitting(true);
@@ -100,7 +100,7 @@ export default function EventDrawer({
           title: editingEvent.title,
           timeRange: [startTime, endTime],
           employeeId: editingEvent.employeeId,
-          description: editingEvent.description,
+          description: editingEvent.description
         });
 
         if (editingEvent.color) {
@@ -123,7 +123,7 @@ export default function EventDrawer({
 
         form.setFieldsValue({
           employeeId: initialValues.employeeId,
-          timeRange: [startTime, endTime],
+          timeRange: [startTime, endTime]
         });
       }
     }
@@ -164,7 +164,7 @@ export default function EventDrawer({
         form={form}
         layout="vertical"
         initialValues={{
-          color: "#1677ff",
+          color: "#1677ff"
         }}
       >
         <Form.Item
@@ -183,14 +183,14 @@ export default function EventDrawer({
           <RangePicker
             showTime={{
               format: "HH:mm",
-              minuteStep: 15,
+              minuteStep: 15
             }}
             format="YYYY-MM-DD HH:mm"
             style={{ width: "100%" }}
-            disabledDate={(current) => {
-              // 禁用今天以外的日期
-              return current && !current.isSame(dayjs(), "day");
-            }}
+            // disabledDate={(current) => {
+            //   // 禁用今天以外的日期
+            //   return current && !current.isSame(dayjs(), "day");
+            // }}
           />
         </Form.Item>
 
@@ -199,7 +199,11 @@ export default function EventDrawer({
           name="employeeId"
           rules={[{ required: true, message: "Please select an assignee" }]}
         >
-          <Select placeholder="Please select an assignee" showSearch optionFilterProp="children">
+          <Select
+            placeholder="Please select an assignee"
+            showSearch
+            optionFilterProp="children"
+          >
             {employees.map((employee) => (
               <Select.Option key={employee.id} value={employee.id}>
                 {employee.name}
@@ -224,9 +228,9 @@ export default function EventDrawer({
                   "#722ed1",
                   "#13c2c2",
                   "#eb2f96",
-                  "#fa8c16",
-                ],
-              },
+                  "#fa8c16"
+                ]
+              }
             ]}
           />
         </Form.Item>

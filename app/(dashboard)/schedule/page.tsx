@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DayView, CalendarEventData } from "schedule-calendar";
+import { ScheduleCalendar, CalendarEventData } from "schedule-calendar";
 import { message, Spin } from "antd";
 import EventDrawer from "@/app/components/EventDrawer";
 import EventCard from "@/app/components/EventCard";
 import api from "@/app/lib/axios";
-import dayjs from "dayjs";
+import { getContrastTextColor } from "@/app/utils/colorUtils";
+import dayjs, { Dayjs } from "dayjs";
 
 // 员工数据类型
 type Employee = {
@@ -28,13 +29,20 @@ type ScheduleEvent = {
 };
 
 const TIMEZONE_STORAGE_KEY = "visual-schedule.timezone";
+const WEEK_STARTS_ON = 1; // 0 = Sunday, 1 = Monday
+const HEATMAP_COLORS = ["#ffedd5", "#fdba74", "#fb923c", "#f97316", "#dc2626"];
+const MAX_INTERVAL_LABELS = 3;
+
+type CalendarView = "day" | "week" | "month";
+const START_HOUR = 9;
+const END_HOUR = 20;
 
 /**
  * 将后端事件数据转换为日历组件所需的格式
  * @param event - 后端返回的事件数据
  * @returns 日历组件所需的事件数据格式
  */
-const toCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
+const toDayCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
   id: event.id,
   title: event.title,
   start: dayjs(event.start_at).format("HH:mm"), // 转换为 9:00 格式
@@ -44,13 +52,52 @@ const toCalendarEvent = (event: ScheduleEvent): CalendarEventData => ({
   description: event.description ?? undefined
 });
 
+const getHeatmapColor = (ratio: number) => {
+  const clamped = Math.max(0, Math.min(1, ratio));
+  const index = Math.min(
+    HEATMAP_COLORS.length - 1,
+    Math.floor(clamped * HEATMAP_COLORS.length)
+  );
+  return HEATMAP_COLORS[index];
+};
+
+const formatIntervals = (intervals: Array<{ start: Dayjs; end: Dayjs }>) => {
+  if (intervals.length === 0) return "";
+  const visible = intervals.slice(0, MAX_INTERVAL_LABELS);
+  const labels = visible.map(
+    (interval) =>
+      `${interval.start.format("HH:mm")}-${interval.end.format("HH:mm")}`
+  );
+  const remaining = intervals.length - visible.length;
+  return remaining > 0
+    ? `${labels.join(" · ")} +${remaining}`
+    : labels.join(" · ");
+};
+
+const getRangeForView = (date: Date, view: CalendarView) => {
+  const base = dayjs(date);
+  if (view === "day") {
+    return { start: base.startOf("day"), end: base.endOf("day") };
+  }
+  if (view === "month") {
+    return { start: base.startOf("month"), end: base.endOf("month") };
+  }
+
+  const dayOfWeek = base.day();
+  const diff = (dayOfWeek - WEEK_STARTS_ON + 7) % 7;
+  const start = base.subtract(diff, "day").startOf("day");
+  const end = start.add(6, "day").endOf("day");
+  return { start, end };
+};
+
 /**
  * 日程管理页面组件
  * 显示日历视图，支持创建、编辑、删除和拖拽事件
  */
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // 当前显示的日期
-  const [events, setEvents] = useState<CalendarEventData[]>([]); // 事件列表
+  const [view, setView] = useState<CalendarView>("day");
+  const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]); // 事件列表
   const [employees, setEmployees] = useState<Employee[]>([]); // 员工列表
   const [loading, setLoading] = useState(true); // 加载状态
   const [drawerOpen, setDrawerOpen] = useState(false); // 抽屉是否打开
@@ -61,7 +108,7 @@ export default function SchedulePage() {
     employeeId?: string;
     startTime?: string;
   }>({}); // 新建事件时的初始值
-  const [timeZone, setTimeZone] = useState<string | null>(null);
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
 
   // 将员工列表转换为日历组件所需的格式
   const employeeOptions = useMemo(
@@ -91,25 +138,32 @@ export default function SchedulePage() {
    * 获取指定日期的事件列表
    * @param date - 要查询的日期
    */
-  const fetchEvents = useCallback(async (date: Date) => {
-    setLoading(true);
-    const start = dayjs(date).startOf("day").toISOString();
-    const end = dayjs(date).endOf("day").toISOString();
-    const params = new URLSearchParams({ start, end });
-    const response = await api.get<{ events: ScheduleEvent[] }>(
-      `/schedule-events?${params.toString()}`
-    );
+  const fetchEvents = useCallback(
+    async (date: Date, viewType: CalendarView) => {
+      setLoading(true);
+      const { start: rangeStart, end: rangeEnd } = getRangeForView(
+        date,
+        viewType
+      );
+      const start = rangeStart.toISOString();
+      const end = rangeEnd.toISOString();
+      const params = new URLSearchParams({ start, end });
+      const response = await api.get<{ events: ScheduleEvent[] }>(
+        `/schedule-events?${params.toString()}`
+      );
 
-    if (response.error) {
-      message.error(response.error.message);
+      if (response.error) {
+        message.error(response.error.message);
+        setLoading(false);
+        return;
+      }
+
+      const fetchedEvents = response.data?.events ?? [];
+      setScheduleEvents(fetchedEvents);
       setLoading(false);
-      return;
-    }
-
-    const fetchedEvents = response.data?.events ?? [];
-    setEvents(fetchedEvents.map(toCalendarEvent));
-    setLoading(false);
-  }, []);
+    },
+    []
+  );
 
   // 组件挂载时获取员工列表
   useEffect(() => {
@@ -117,11 +171,11 @@ export default function SchedulePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 当日期变化时获取该日期的事件
+  // 当日期或视图变化时获取对应范围的事件
   useEffect(() => {
-    fetchEvents(currentDate);
+    fetchEvents(currentDate, view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate]);
+  }, [currentDate, view]);
 
   /**
    * 处理时间格点击事件
@@ -186,12 +240,12 @@ export default function SchedulePage() {
       }
 
       if (response.data?.event) {
-        const updated = toCalendarEvent(response.data.event);
-        setEvents((prev) =>
+        const updated = response.data.event;
+        setScheduleEvents((prev) =>
           prev.map((event) => (event.id === updated.id ? updated : event))
         );
       } else {
-        await fetchEvents(currentDate);
+        await fetchEvents(currentDate, view);
       }
 
       setEditingEvent(null);
@@ -209,7 +263,7 @@ export default function SchedulePage() {
       return false;
     }
 
-    await fetchEvents(currentDate);
+    await fetchEvents(currentDate, view);
     return true;
   };
 
@@ -237,7 +291,7 @@ export default function SchedulePage() {
       return;
     }
 
-    setEvents((prev) => prev.filter((event) => event.id !== eventId));
+    setScheduleEvents((prev) => prev.filter((event) => event.id !== eventId));
     setEditingEvent(null);
   };
 
@@ -284,26 +338,22 @@ export default function SchedulePage() {
     const newStart = parseTime(next.start);
     const newEnd = newStart.add(duration, "minute");
 
-    const updatedEvent: CalendarEventData = {
-      ...event,
-      start: newStart.toISOString(),
-      end: newEnd.toISOString()
-    };
+    const updatedStart = newStart.toISOString();
+    const updatedEnd = newEnd.toISOString();
 
     // 立即更新 UI
-    setEvents((prev) => {
-      const updatedEvents = prev.map((item) =>
+    setScheduleEvents((prev) =>
+      prev.map((item) =>
         item.id === event.id
           ? {
               ...item,
-              employeeId: next.employeeId,
-              start: newStart.format("HH:mm"),
-              end: newEnd.format("HH:mm")
+              employee_id: next.employeeId,
+              start_at: updatedStart,
+              end_at: updatedEnd
             }
           : item
-      );
-      return updatedEvents;
-    });
+      )
+    );
 
     // 发送更新请求到后端
     const response = await api.patch<{
@@ -311,53 +361,218 @@ export default function SchedulePage() {
       events?: ScheduleEvent[];
     }>(`/schedule-events/${event.id}`, {
       employee_id: next.employeeId,
-      start_at: updatedEvent.start,
-      end_at: updatedEvent.end
+      start_at: updatedStart,
+      end_at: updatedEnd
     });
 
     if (response.error) {
       // 更新失败，重新获取事件列表
       message.error(response.error.message);
-      fetchEvents(currentDate);
+      fetchEvents(currentDate, view);
       return;
     }
   };
+
+  const dayEvents = useMemo(
+    () => scheduleEvents.map(toDayCalendarEvent),
+    [scheduleEvents]
+  );
+
+  const aggregatedHeatmap = useMemo(() => {
+    const aggregated = new Map<
+      string,
+      {
+        minutes: number;
+        count: number;
+        earliest: Dayjs;
+        latest: Dayjs;
+        intervals: Array<{ start: Dayjs; end: Dayjs }>;
+      }
+    >();
+
+    scheduleEvents.forEach((event) => {
+      const start = dayjs(event.start_at);
+      const end = dayjs(event.end_at);
+      const minutes = Math.max(end.diff(start, "minute"), 0);
+      const dateKey = start.format("YYYY-MM-DD");
+      const current = aggregated.get(dateKey);
+      if (current) {
+        aggregated.set(dateKey, {
+          minutes: current.minutes + minutes,
+          count: current.count + 1,
+          earliest: start.isBefore(current.earliest) ? start : current.earliest,
+          latest: end.isAfter(current.latest) ? end : current.latest,
+          intervals: [...current.intervals, { start, end }]
+        });
+      } else {
+        aggregated.set(dateKey, {
+          minutes,
+          count: 1,
+          earliest: start,
+          latest: end,
+          intervals: [{ start, end }]
+        });
+      }
+    });
+
+    const maxMinutes = Math.max(
+      0,
+      ...Array.from(aggregated.values()).map((item) => item.minutes)
+    );
+
+    return { aggregated, maxMinutes };
+  }, [scheduleEvents]);
+
+  const heatmapWeekEvents = useMemo(() => {
+    const { aggregated, maxMinutes } = aggregatedHeatmap;
+    return Array.from(aggregated.entries()).map(([dateKey, stats]) => {
+      const sortedIntervals = [...stats.intervals].sort(
+        (a, b) => a.start.valueOf() - b.start.valueOf()
+      );
+      const mergedIntervals: Array<{ start: Dayjs; end: Dayjs }> = [];
+
+      sortedIntervals.forEach((interval) => {
+        const last = mergedIntervals[mergedIntervals.length - 1];
+        if (!last) {
+          mergedIntervals.push(interval);
+          return;
+        }
+        if (
+          interval.start.isSame(last.end) ||
+          interval.start.isBefore(last.end)
+        ) {
+          last.end = interval.end.isAfter(last.end) ? interval.end : last.end;
+        } else {
+          mergedIntervals.push(interval);
+        }
+      });
+
+      const intervalLabel = formatIntervals(mergedIntervals);
+      const ratio = maxMinutes ? stats.minutes / maxMinutes : 0;
+      const hours = stats.minutes / 60;
+      return {
+        id: `heat-week-${dateKey}`,
+        title: `${stats.count} events`,
+        description: intervalLabel
+          ? `${intervalLabel} · ${hours.toFixed(1)} h`
+          : `${hours.toFixed(1)} h`,
+        start: `${dateKey} ${stats.earliest.format("HH:mm")}`,
+        end: `${dateKey} ${stats.latest.format("HH:mm")}`,
+        employeeId: "all",
+        color: getHeatmapColor(ratio)
+      };
+    });
+  }, [aggregatedHeatmap]);
+
+  const heatmapMonthEvents = useMemo(() => {
+    const { aggregated, maxMinutes } = aggregatedHeatmap;
+    return Array.from(aggregated.entries()).map(([dateKey, stats]) => {
+      const ratio = maxMinutes ? stats.minutes / maxMinutes : 0;
+      const hours = stats.minutes / 60;
+      return {
+        id: `heat-month-${dateKey}`,
+        title: `${stats.count} events`,
+        description: `${hours.toFixed(1)} h`,
+        start: `${dateKey} 00:00`,
+        end: `${dateKey} 23:59`,
+        employeeId: "all",
+        color: getHeatmapColor(ratio)
+      };
+    });
+  }, [aggregatedHeatmap]);
+
+  const renderHeatmapEvent = useCallback(
+    ({ event }: { event: CalendarEventData }) => {
+      const background = event.color ?? "#3b82f6";
+      const textColor = getContrastTextColor(background, 0.6);
+
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: 6,
+            background,
+            color: textColor,
+            padding: "6px 8px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            fontSize: 11,
+            fontWeight: 600
+          }}
+        >
+          <div>{event.title}</div>
+          {event.description && (
+            <div style={{ fontSize: 10, opacity: 0.85 }}>
+              {event.description}
+            </div>
+          )}
+        </div>
+      );
+    },
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const storedTimeZone = window.localStorage.getItem(TIMEZONE_STORAGE_KEY);
     if (storedTimeZone) {
       setTimeZone(storedTimeZone);
-      return;
     }
     const resolvedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (resolvedTimeZone) {
+    if (resolvedTimeZone && !storedTimeZone) {
       setTimeZone(resolvedTimeZone);
-      window.localStorage.setItem(TIMEZONE_STORAGE_KEY, resolvedTimeZone);
     }
   }, []);
 
   return (
     <div className="h-full relative">
       {/* 日历视图组件 */}
-      <DayView
-        startHour={9} // 开始时间：9:00
-        endHour={20} // 结束时间：20:00
-        stepMinutes={15} // 时间间隔：15分钟
-        use24HourFormat // 使用24小时制
+      <ScheduleCalendar
         currentDate={currentDate}
         onDateChange={setCurrentDate}
-        employees={employeeOptions}
-        events={events}
-        renderEvent={(params) => {
-          return (
+        view={view}
+        onViewChange={setView}
+        showViewSwitcher
+        weekStartsOn={WEEK_STARTS_ON}
+        timeZone={timeZone}
+        events={
+          view === "day"
+            ? dayEvents
+            : view === "week"
+              ? heatmapWeekEvents
+              : heatmapMonthEvents
+        }
+        dayViewProps={{
+          startHour: START_HOUR,
+          endHour: END_HOUR,
+          stepMinutes: 15,
+          use24HourFormat: true,
+          employees: employeeOptions,
+          renderEvent: (params) => (
             <EventCard event={params.event} isDragging={params.isDragging} />
-          );
+          ),
+          eventClassName: "rounded-xl shadow-sm",
+          onEventDrop: handleEventDrop,
+          onEventClick: handleEventClick,
+          onTimeLabelClick: handleTimeLabelClick
         }}
-        eventClassName="rounded-xl shadow-sm"
-        onEventDrop={handleEventDrop}
-        onEventClick={handleEventClick}
-        onTimeLabelClick={handleTimeLabelClick}
+        weekViewProps={{
+          startHour: START_HOUR,
+          endHour: END_HOUR,
+          stepMinutes: 30,
+          cellHeight: 28,
+          use24HourFormat: true,
+          renderEvent: renderHeatmapEvent,
+          eventStyle: {
+            borderRadius: 6
+          }
+        }}
+        monthViewProps={{
+          maxEventsPerCell: 1,
+          renderEvent: renderHeatmapEvent
+        }}
       />
 
       {/* 加载中遮罩层 */}
@@ -368,15 +583,17 @@ export default function SchedulePage() {
       )}
 
       {/* 事件编辑/创建抽屉 */}
-      <EventDrawer
-        open={drawerOpen}
-        onClose={handleDrawerClose}
-        onSubmit={handleEventSubmit}
-        onDelete={handleEventDelete}
-        employees={employeeOptions}
-        editingEvent={editingEvent}
-        initialValues={initialValues}
-      />
+      {view === "day" && (
+        <EventDrawer
+          open={drawerOpen}
+          onClose={handleDrawerClose}
+          onSubmit={handleEventSubmit}
+          onDelete={handleEventDelete}
+          employees={employeeOptions}
+          editingEvent={editingEvent}
+          initialValues={initialValues}
+        />
+      )}
     </div>
   );
 }
